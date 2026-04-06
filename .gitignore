@@ -69,3 +69,6 @@ data/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Go binary
+golang/bin/
