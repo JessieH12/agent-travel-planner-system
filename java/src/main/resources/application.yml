@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: travel-planner
+
+logging:
+  level:
+    com.travel: INFO
