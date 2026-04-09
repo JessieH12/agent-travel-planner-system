@@ -8,3 +8,5 @@ spring:
 logging:
   level:
     com.travel: INFO
+  charset:
+    console: GBK

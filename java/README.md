@@ -6,19 +6,8 @@
 
 - JDK **21**（`pom.xml` 中 `java.version` 为 21）
 - Maven **3.9+**，或直接使用项目内的 **Maven Wrapper**（`./mvnw`）
-
-### macOS（Homebrew 已安装 `openjdk@21` 但未 link）
-
-若默认 `java` 仍是 17，编译前指定：
-
-```bash
-export JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
-```
-
 ## 构建
-
 ```bash
-cd java
 ./mvnw -q clean package -DskipTests
 ```
 
@@ -27,7 +16,6 @@ cd java
 ## 运行
 
 ```bash
-cd java
 export JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"   # 按需
 ./mvnw spring-boot:run
 ```
