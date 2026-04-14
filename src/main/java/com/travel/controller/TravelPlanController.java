@@ -4,6 +4,7 @@ import com.travel.model.PlanningState;
 import com.travel.model.TravelPlanState;
 import com.travel.model.UserPreferences;
 import com.travel.service.TravelPlanService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +39,7 @@ public class TravelPlanController {
     }
 
     @PostMapping("/plan")
-    public ResponseEntity<TravelPlanState> plan(@RequestBody UserPreferences preferences) {
+    public ResponseEntity<TravelPlanState> plan(@Valid @RequestBody UserPreferences preferences) {
         TravelPlanState state = travelPlanService.plan(preferences);
         if (state.getPlanningState() == PlanningState.FAILED) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(state);

@@ -1,5 +1,6 @@
 package com.travel.agent;
 
+import com.travel.exception.TravelValidationException;
 import com.travel.model.PlanningState;
 import com.travel.model.TravelPlanState;
 import com.travel.model.TravelStyle;
@@ -36,48 +37,16 @@ public class PreferenceAgent extends BaseAgent {
     @Override
     protected void execute(TravelPlanState state) {
         UserPreferences p = state.getPreferences();
-        if (p == null) {
-            fail(state, "缺少用户偏好");
-            return;
-        }
-        if (p.getBudget() == null || p.getBudget().compareTo(BigDecimal.ZERO) <= 0) {
-            fail(state, "预算必须为正数");
-            return;
-        }
-        if (p.getStartDate() == null || p.getEndDate() == null) {
-            fail(state, "出行日期不能为空");
-            return;
-        }
-        if (p.getEndDate().isBefore(p.getStartDate())) {
-            fail(state, "结束日期不能早于开始日期");
-            return;
-        }
-        if (p.getTravelers() < 1) {
-            fail(state, "出行人数至少为 1");
-            return;
-        }
-        if (p.getDepartureCity() == null || p.getDepartureCity().isBlank()) {
-            fail(state, "出发城市不能为空");
-            return;
-        }
+
         if (p.getStyle() == null) {
             p.setStyle(TravelStyle.RELAXED);
-            log.info("未指定旅行风格，默认 RELAXED");
+            log.warn("未指定旅行风格，默认 RELAXED");
         }
 
-        long tripDays = ChronoUnit.DAYS.between(p.getStartDate(), p.getEndDate());
-        if (tripDays < 1) {
-            fail(state, "行程天数至少为 1 天（结束日应晚于开始日）");
-            return;
-        }
-
-        if (p.getInterests() == null) {
-            p.setInterests(new ArrayList<>());
-        }
         if (p.getInterests().isEmpty()) {
             List<String> defs = DEFAULT_INTERESTS.getOrDefault(p.getStyle(), List.of("观光", "美食"));
             p.setInterests(new ArrayList<>(defs));
-            log.info("兴趣列表为空，已按风格 {} 填充默认兴趣", p.getStyle());
+            log.warn("兴趣列表为空，已按风格 {} 填充默认兴趣", p.getStyle());
         }
 
         state.setPlanningState(PlanningState.PREFERENCES_READY);

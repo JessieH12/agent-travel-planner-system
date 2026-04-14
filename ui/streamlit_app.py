@@ -52,10 +52,23 @@ with col2:
             try:
                 response = requests.post("http://localhost:8080/api/plan", json=payload)
 
-                # 1. 优雅处理 400 业务校验错误（拦截填错的日期等）
+                # # 1. 优雅处理 400 业务校验错误（拦截填错的日期等）
+                # if response.status_code == 400:
+                #     err_data = response.json()
+                #     st.warning(f"⚠️ 规划失败：{err_data.get('errorMessage', '请求参数有误，请检查左侧表单')}")
+                # 1. 优雅处理 400 业务校验错误
                 if response.status_code == 400:
                     err_data = response.json()
-                    st.warning(f"⚠️ 规划失败：{err_data.get('errorMessage', '请求参数有误，请检查左侧表单')}")
+                    errors_dict = err_data.get('errors', {})
+
+                    st.warning("⚠️ 规划失败，请检查左侧表单的填写项：")
+                    # 遍历显示所有具体的报错详情
+                    if errors_dict:
+                        for field, msg in errors_dict.items():
+                            st.error(f"❌ {msg}")
+                    else:
+                        # 兜底：如果是业务抛出的普通错误（如行程不足1天），直接显示 errorMessage
+                        st.error(f"❌ {err_data.get('errorMessage', '请求参数有误')}")
 
                 # 2. 如果是 200 成功，则渲染页面
                 elif response.status_code == 200:
