@@ -2,6 +2,7 @@ package com.travel;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 
 /**
  * Spring Boot 入口。
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * + {@code @ComponentScan}，用于启动内嵌 Tomcat 并扫描 {@code com.travel} 包下的 Bean。
  * </p>
  */
+@EnableCaching
 @SpringBootApplication
 public class TravelPlannerApplication {
 

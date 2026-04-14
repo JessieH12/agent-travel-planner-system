@@ -7,6 +7,7 @@ import com.travel.model.TravelPlanState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import com.travel.config.TravelProperties;
 
 /**
  * 预算循环控制器：「并行检索 → 预算评估 → 超支则渐进调整 → 最多 3 轮」。
@@ -23,15 +24,15 @@ import org.springframework.stereotype.Component;
 public class BudgetLoopController {
 
     private static final Logger log = LoggerFactory.getLogger(BudgetLoopController.class);
-    /** 最大循环轮次（含首次并行检索） */
-    private static final int MAX_ROUNDS = 3;
 
     private final ParallelExecutor parallelExecutor;
     private final BudgetAgent budgetAgent;
+    private final int maxRounds;
 
-    public BudgetLoopController(ParallelExecutor parallelExecutor, BudgetAgent budgetAgent) {
+    public BudgetLoopController(ParallelExecutor parallelExecutor, BudgetAgent budgetAgent, TravelProperties travelProperties) {
         this.parallelExecutor = parallelExecutor;
         this.budgetAgent = budgetAgent;
+        this.maxRounds = travelProperties.getBudget().getMaxRounds();
     }
 
     /**
@@ -41,7 +42,7 @@ public class BudgetLoopController {
         if (state.getPlanningState() == PlanningState.FAILED) {
             return;
         }
-        for (int round = 0; round < MAX_ROUNDS; round++) {
+        for (int round = 0; round < this.maxRounds; round++) {
             state.setAdjustmentRound(round);
             log.info("预算循环第 {} 轮（0-based），budgetPressureLevel={}", round, state.getBudgetPressureLevel());
 
@@ -55,7 +56,7 @@ public class BudgetLoopController {
                 return;
             }
 
-            boolean lastRound = (round == MAX_ROUNDS - 1);
+            boolean lastRound = (round == this.maxRounds - 1);
             if (lastRound) {
                 state.setPlanningState(PlanningState.BUDGET_RESOLVED);
                 log.warn("已达最大轮次仍可能超预算，返回当前最优 mock 结果供人工决策");

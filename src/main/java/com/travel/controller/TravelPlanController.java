@@ -4,6 +4,8 @@ import com.travel.model.PlanningState;
 import com.travel.model.TravelPlanState;
 import com.travel.model.UserPreferences;
 import com.travel.service.TravelPlanService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api")
+@Tag(name = "旅游规划服务", description = "多智能体协作的行程规划核心 API")
 public class TravelPlanController {
 
     private final TravelPlanService travelPlanService;
@@ -39,6 +42,7 @@ public class TravelPlanController {
     }
 
     @PostMapping("/plan")
+    @Operation(summary = "生成智能行程规划", description = "根据用户的预算、人数、风格等偏好，通过多Agent协同生成最优化行程。")
     public ResponseEntity<TravelPlanState> plan(@Valid @RequestBody UserPreferences preferences) {
         TravelPlanState state = travelPlanService.plan(preferences);
         if (state.getPlanningState() == PlanningState.FAILED) {

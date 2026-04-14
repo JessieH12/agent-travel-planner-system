@@ -10,3 +10,27 @@ logging:
     com.travel: INFO
   charset:
     console: GBK
+
+# 行程规划系统自定义配置
+travel:
+  # 线程池配置
+  thread-pool:
+    core-size: 4
+    max-size: 8
+    queue-capacity: 200
+  # 预算降级引擎配置
+  budget:
+    max-rounds: 3       # 最大循环降级轮次
+    max-pressure: 2     # 最大预算压力等级
+
+
+  # 在 travel 配置块下方新增 spring 和 management 配置
+  spring:
+    cache:
+      type: simple # 简单内存缓存（后续可轻松替换为 redis）
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,metrics,info # 暴露健康检查和性能指标端点

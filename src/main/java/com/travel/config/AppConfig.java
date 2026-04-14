@@ -17,12 +17,20 @@ import java.util.concurrent.Executor;
 @Configuration
 public class AppConfig {
 
+    private final TravelProperties travelProperties;
+
+    // 构造器注入配置类
+    public AppConfig(TravelProperties travelProperties) {
+        this.travelProperties = travelProperties;
+    }
+
     @Bean(name = "travelPlanningExecutor")
     public Executor travelPlanningExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(4);
-        executor.setMaxPoolSize(8);
-        executor.setQueueCapacity(200);
+        // 使用外部化配置替换原来的硬编码
+        executor.setCorePoolSize(travelProperties.getThreadPool().getCoreSize());
+        executor.setMaxPoolSize(travelProperties.getThreadPool().getMaxSize());
+        executor.setQueueCapacity(travelProperties.getThreadPool().getQueueCapacity());
         executor.setThreadNamePrefix("travel-plan-");
         executor.initialize();
         return executor;

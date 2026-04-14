@@ -44,4 +44,7 @@ public class TravelPlanState {
 
     /** 人类可读的错误信息（如校验失败） */
     private String errorMessage;
+
+    /** 记录当前轮次应该优先降级哪个目标（如 "HOTEL", "ACTIVITY", "ALL"）*/
+    private String downgradeTarget = "ALL";
 }

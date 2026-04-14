@@ -1,12 +1,7 @@
 package com.travel.agent;
 
-import com.travel.model.ActivitySearchResult;
-import com.travel.model.BudgetBreakdown;
-import com.travel.model.FlightSearchResult;
-import com.travel.model.HotelSearchResult;
-import com.travel.model.PlanningState;
-import com.travel.model.TravelPlanState;
-import com.travel.model.UserPreferences;
+import com.travel.config.TravelProperties;
+import com.travel.model.*;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -29,7 +24,11 @@ import java.util.List;
 @Component
 public class BudgetAgent extends BaseAgent {
 
-    private static final int MAX_PRESSURE = 2;
+    private final int maxPressure;
+
+    public BudgetAgent(TravelProperties travelProperties) {
+        this.maxPressure = travelProperties.getBudget().getMaxPressure();
+    }
 
     @Override
     protected void execute(TravelPlanState state) {
@@ -94,10 +93,27 @@ public class BudgetAgent extends BaseAgent {
             return false;
         }
         int next = state.getBudgetPressureLevel() + 1;
-        if (next > MAX_PRESSURE) {
+        if (next > this.maxPressure) {
             log.warn("已达最大预算压力等级，停止继续降级");
             return false;
         }
+
+        // --- 核心优化：基于旅行风格的靶向降级策略 ---
+        TravelStyle style = state.getPreferences().getStyle();
+        if (style == TravelStyle.LUXURY) {
+            // 豪华游：坚决不降级酒店，优先削减活动开销
+            state.setDowngradeTarget("ACTIVITY");
+            log.info("触发智能降级 [豪华游]：优先削减活动项目，保护住宿体验");
+        } else if (style == TravelStyle.BUDGET_FRIENDLY) {
+            // 穷游：优先削减酒店和航班标准
+            state.setDowngradeTarget("HOTEL");
+            log.info("触发智能降级 [经济游]：优先降低住宿星级");
+        } else {
+            // 其他：均衡降级
+            state.setDowngradeTarget("ALL");
+            log.info("触发智能降级 [普通]：全局均衡降级");
+        }
+
         state.setBudgetPressureLevel(next);
         state.setPlanningState(PlanningState.BUDGET_ADJUSTMENT);
         log.info("应用渐进式预算调整: budgetPressureLevel={}", next);

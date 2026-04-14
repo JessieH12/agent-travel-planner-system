@@ -5,6 +5,7 @@ import com.travel.model.UserPreferences;
 import com.travel.orchestrator.TravelPlanningPipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -28,6 +29,7 @@ public class TravelPlanService {
     /**
      * 根据用户偏好执行完整多智能体规划。
      */
+    @Cacheable(value = "travelPlans", key = "#preferences.hashCode()")
     public TravelPlanState plan(UserPreferences preferences) {
         log.info("TravelPlanService 接收规划请求: 出发={} 人数={}",
                 preferences != null ? preferences.getDepartureCity() : null,
