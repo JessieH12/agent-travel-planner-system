@@ -26,7 +26,6 @@ with col1:
     start_date = st.date_input("出发日期")
     end_date = st.date_input("返回日期")
 
-    # 注意：这里的选项被修改为了 Java API 支持的 Enum 值
     style = st.selectbox("旅行风格",
                          ["RELAXED", "BUDGET_FRIENDLY", "LUXURY", "ADVENTURE", "CULTURE"],
                          format_func=lambda x: {"RELAXED": "休闲", "BUDGET_FRIENDLY": "经济", "LUXURY": "豪华",
@@ -52,10 +51,6 @@ with col2:
             try:
                 response = requests.post("http://localhost:8080/api/plan", json=payload)
 
-                # # 1. 优雅处理 400 业务校验错误（拦截填错的日期等）
-                # if response.status_code == 400:
-                #     err_data = response.json()
-                #     st.warning(f"⚠️ 规划失败：{err_data.get('errorMessage', '请求参数有误，请检查左侧表单')}")
                 # 1. 优雅处理 400 业务校验错误
                 if response.status_code == 400:
                     err_data = response.json()
@@ -75,13 +70,13 @@ with col2:
                     result = response.json()
                     st.success("🎉 行程规划完成!")
 
-                    # --- 1. 提取目的地 (对应 Java 字段: destination -> city) ---
+                    # --- 1. 提取目的地 ---
                     dest_obj = result.get('selectedDestination', {})
                     dest = dest_obj.get('city', '未知')
                     country = dest_obj.get('country', '')
                     highlights = dest_obj.get('highlights', [])
 
-                    # --- 2. 提取预算明细 (对应 Java 字段: budgetBreakdown -> flightCost 等) ---
+                    # --- 2. 提取预算明细 ---
                     bb = result.get('budgetBreakdown', {})
                     # 注意：Java 使用驼峰命名，需严格匹配
                     flight_cost = bb.get('flightCost', 0)
@@ -93,7 +88,7 @@ with col2:
 
                     rounds = result.get('adjustmentRound', 0)
 
-                    # --- 3. 提取住宿信息 (对应 Java 字段: hotelResult -> recommended -> name) ---
+                    # --- 3. 提取住宿信息 ---
                     hr = result.get('hotelSearchResult', {})
                     hotel_info = hr.get('recommended', {})
                     hotel_name = hotel_info.get('name', '未指定')

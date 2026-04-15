@@ -7,6 +7,8 @@ import com.travel.service.TravelPlanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,8 +34,11 @@ public class TravelPlanController {
 
     private final TravelPlanService travelPlanService;
 
-    public TravelPlanController(TravelPlanService travelPlanService) {
+    private final ChatClient.Builder chatClientBuilder;
+
+    public TravelPlanController(TravelPlanService travelPlanService, ChatClient.Builder chatClientBuilder) {
         this.travelPlanService = travelPlanService;
+        this.chatClientBuilder = chatClientBuilder;
     }
 
     @GetMapping("/health")
@@ -49,5 +54,34 @@ public class TravelPlanController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(state);
         }
         return ResponseEntity.ok(state);
+    }
+
+    @GetMapping("/debug/llm")
+    @Operation(summary = "测试大模型连通性", description = "用于验证 Spring AI 是否已正确连接到 DashScope/Qwen")
+    public ResponseEntity<?> testLlm() {
+        try {
+            ChatClient chatClient = chatClientBuilder.build();
+
+            String result = chatClient.prompt()
+                    .user("请只回复：Spring AI 已连接成功")
+                    .options(OpenAiChatOptions.builder()
+                            .withModel("qwen3.5-plus")
+                            .withTemperature(0.2)
+                            .build())
+                    .call()
+                    .content();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "model", "qwen-plus",
+                    "result", result
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "error", e.getClass().getName(),
+                    "message", e.getMessage()
+            ));
+        }
     }
 }

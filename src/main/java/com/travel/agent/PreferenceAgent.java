@@ -1,18 +1,15 @@
 package com.travel.agent;
 
 import com.travel.exception.TravelValidationException;
-import com.travel.model.PlanningState;
-import com.travel.model.TravelPlanState;
-import com.travel.model.TravelStyle;
-import com.travel.model.UserPreferences;
+import com.travel.model.*;
+import com.travel.service.TravelPersonaService;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 偏好智能体：校验 + 丰富默认值。
@@ -24,6 +21,8 @@ import java.util.Map;
 @Component
 public class PreferenceAgent extends BaseAgent {
 
+    private final TravelPersonaService travelPersonaService;
+
     private static final Map<TravelStyle, List<String>> DEFAULT_INTERESTS = new EnumMap<>(TravelStyle.class);
 
     static {
@@ -34,10 +33,18 @@ public class PreferenceAgent extends BaseAgent {
         DEFAULT_INTERESTS.put(TravelStyle.BUDGET_FRIENDLY, List.of("免费景点", "公共交通", "街头小吃"));
     }
 
+    public PreferenceAgent(TravelPersonaService travelPersonaService) {
+        this.travelPersonaService = travelPersonaService;
+    }
+
+
     @Override
     protected void execute(TravelPlanState state) {
-        UserPreferences p = state.getPreferences();
+        if (state.getPlanningState() == PlanningState.FAILED) {
+            return;
+        }
 
+        UserPreferences p = state.getPreferences();
         if (p.getStyle() == null) {
             p.setStyle(TravelStyle.RELAXED);
             log.warn("未指定旅行风格，默认 RELAXED");
@@ -49,7 +56,76 @@ public class PreferenceAgent extends BaseAgent {
             log.warn("兴趣列表为空，已按风格 {} 填充默认兴趣", p.getStyle());
         }
 
-        state.setPlanningState(PlanningState.PREFERENCES_READY);
+        normalizeBasicPreferences(p);
+
+        try {
+            TravelPersona persona;
+            if (hasMeaningfulNotes(p)) {
+                persona = travelPersonaService.analyze(p);
+                log.info("PreferenceAgent 已完成 LLM Persona 分析");
+            } else {
+                persona = travelPersonaService.buildHeuristicPersona(p);
+                log.info("PreferenceAgent 未提供 userNotes，使用规则版 Persona");
+            }
+
+            state.setPersona(persona);
+            mergePersonaTagsIntoInterests(p, persona);
+            state.setPlanningState(PlanningState.PREFERENCES_READY);
+
+            log.info(
+                    "PreferenceAgent 完成：style={}, interests={}, pace={}, tags={}",
+                    p.getStyle(),
+                    p.getInterests(),
+                    persona != null ? persona.getPace() : null,
+                    persona != null ? persona.getExtractedTags() : null
+            );
+
+        } catch (Exception e) {
+            log.error("PreferenceAgent 调用 LLM 失败，降级为规则 Persona", e);
+
+            TravelPersona fallback = travelPersonaService.buildHeuristicPersona(p);
+            state.setPersona(fallback);
+            mergePersonaTagsIntoInterests(p, fallback);
+            state.setPlanningState(PlanningState.PREFERENCES_READY);
+        }
+
+
+        // state.setPlanningState(PlanningState.PREFERENCES_READY);
+    }
+
+    private void normalizeBasicPreferences(UserPreferences p) {
+        if (p.getStyle() == null) {
+            p.setStyle(TravelStyle.RELAXED);
+            log.warn("未指定旅行风格，默认 RELAXED");
+        }
+
+        if (p.getInterests() == null) {
+            p.setInterests(new ArrayList<>());
+        }
+
+        if (p.getInterests().isEmpty()) {
+            List<String> defs = DEFAULT_INTERESTS.getOrDefault(p.getStyle(), List.of("观光", "美食"));
+            p.setInterests(new ArrayList<>(defs));
+            log.warn("兴趣列表为空，已按风格 {} 填充默认兴趣", p.getStyle());
+        }
+    }
+
+    private boolean hasMeaningfulNotes(UserPreferences p) {
+        return p.getUserNotes() != null && !p.getUserNotes().isBlank();
+    }
+
+    private void mergePersonaTagsIntoInterests(UserPreferences p, TravelPersona persona) {
+        if (persona == null || persona.getExtractedTags() == null || persona.getExtractedTags().isEmpty()) {
+            return;
+        }
+
+        Set<String> merged = new LinkedHashSet<>();
+        if (p.getInterests() != null) {
+            merged.addAll(p.getInterests());
+        }
+        merged.addAll(persona.getExtractedTags());
+
+        p.setInterests(new ArrayList<>(merged));
     }
 
     private void fail(TravelPlanState state, String msg) {

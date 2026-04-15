@@ -78,4 +78,7 @@ public class UserPreferences {
         }
         return endDate.isAfter(startDate);
     }
+
+    @Schema(description = "用户的自然语言补充要求", example = "带两个老人，最好不要爬山，想吃正宗的海鲜")
+    private String userNotes;
 }

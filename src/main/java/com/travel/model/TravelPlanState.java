@@ -33,6 +33,8 @@ public class TravelPlanState {
 
     private PlanningState planningState;
 
+    private TravelPersona persona;
+
     /** 预算循环当前轮次（0-based） */
     private int adjustmentRound;
 
